@@ -22,34 +22,11 @@
 # 
 # m h  dom mon dow   command
 #
-#
-# Update Google Sheets from ActiveCampaign for all the responses.
-#0 8 * * * /usr/bin/python3 /home/pi/projects/python/metrics/metrics.py >/dev/null 2>&1
+# Slackbot daily at 9:05am
+05 9 * * * /home/pi/projects/venv/bin/python3 /home/pi/projects/slackbot/slackbot.py >/dev/null 2>&1
 
-# Update Google Sheets Email Metrics every hour on the 30
-#30 * * * * /usr/bin/python3 /home/pi/projects/python/metrics/email_metrics_sync.py >/dev/null 2>&1
+# Temp monitor every 15 minutes
+*/15 * * * * /bin/bash /home/pi/projects/temp_monitor/temp_monitor.sh >/dev/null 2>&1
 
-# Update Dr. Susan Fox Google Sheet from ActiveCampaign for all the new goodness.
-#30 9 * * * /usr/bin/python3 /home/pi/projects/python/quizbiz/drfox/metrics.py >/dev/null 2>&1 
-
-# The WeatherBot every day at 9:30 am.
-#30 9 * * * /usr/bin/python3 /home/pi/projects/python/weather3/weather.py >/dev/null 2>&1
-
-# The SlackBot every day at 9:05 am.
-05 9 * * * /usr/bin/python3 /home/pi/projects/python/weather3/slackbot.py >/dev/null 2>&1
-
-# The rsync to OXFORD
-0 20 * * * rsync -az -e "ssh -i ~/.ssh/id_ed25519_rsync" /home/pi/projects/ pi@OXFORD:/home/pi/Backup/ >> /home/pi/rsync/rsync.log 2>&1
-
-# The NCAA Lacrosse scores at 11:00 am.
-#0 11 * * * /usr/bin/python3 /home/pi/projects/python/lacrosse/main.py >/dev/null 2>&1
-
-# Fun Flowdock lunch notification from Rally days.
-#0 12 * * 1-5 /usr/bin/python3 /home/pi/projects/python/lunch/lunch.py >/dev/null 2>&1
-
-# Fun Flowdock Good Morning notification from Rally days.
-#59 7 * * 1-5 /usr/bin/python3 /home/pi/projects/python/morning/morning.py >/dev/null 2>&1
-
-# Reminder text to keep the LaurieVillarreal support phone alive.
-#0 10 3 1-11/2 * /usr/bin/python3 /home/pi/projects/python/reminder/reminder.py >/dev/null 2>&1
-
+# Speedtest at 5:30pm
+30 17 * * * /bin/bash /home/pi/projects/speedtest/speedtest_logger.sh >/dev/null 2>&1
