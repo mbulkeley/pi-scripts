@@ -3,9 +3,11 @@ import requests
 from datetime import date, timedelta
 from bs4 import BeautifulSoup
 
+WATCHED_TEAMS = ["Delaware", "Denver", "Air Force"]
 
-def get_d1_scores():
-    yesterday = (date.today() - timedelta(days=1)).strftime("%Y%m%d")
+
+def get_d1_scores(for_date=None):
+    yesterday = for_date or (date.today() - timedelta(days=1)).strftime("%Y%m%d")
     url = (
         "https://site.api.espn.com/apis/site/v2/sports/lacrosse"
         f"/mens-college-lacrosse/scoreboard?dates={yesterday}"
@@ -15,7 +17,9 @@ def get_d1_scores():
     resp.raise_for_status()
     data = resp.json()
 
-    lines = []
+    watched = []
+    others = []
+
     for event in data.get("events", []):
         for competition in event.get("competitions", []):
             status = competition.get("status", {}).get("type", {}).get("name", "")
@@ -34,11 +38,29 @@ def get_d1_scores():
             away_score = int(away.get("score", 0))
 
             if home_score > away_score:
-                lines.append(f"*{home_name}* {home_score}, {away_name} {away_score}")
+                line = f"*{home_name}* {home_score},  {away_name} {away_score}"
             else:
-                lines.append(f"*{away_name}* {away_score}, {home_name} {home_score}")
+                line = f"*{away_name}* {away_score},  {home_name} {home_score}"
 
-    return "\n".join(lines) if lines else "No NCAA D1 lacrosse games yesterday."
+            is_watched = any(
+                t.lower() in home_name.lower() or t.lower() in away_name.lower()
+                for t in WATCHED_TEAMS
+            )
+            if is_watched:
+                watched.append(f"🔹 {line}")
+            else:
+                others.append(f"     {line}")
+
+    if not watched and not others:
+        return None, "No NCAA D1 lacrosse games yesterday."
+
+    sections = []
+    if watched:
+        sections.append("\n".join(watched))
+    if others:
+        sections.append("\n".join(others))
+
+    return "\n\n".join(sections), None
 
 
 def get_csu_mcla_result():
@@ -86,36 +108,71 @@ def get_csu_mcla_result():
         }
 
     if not last_game:
-        return "No CSU MCLA results found."
+        return "_No CSU MCLA results found._"
 
-    type_label = f" ({last_game['type']})" if last_game["type"] else ""
+    outcome = last_game["outcome"]
+    emoji = "✅" if outcome == "W" else "❌"
+    type_label = f"  _{last_game['type']}_" if last_game["type"] else ""
     return (
-        f"{last_game['date']}: Colorado State *{last_game['outcome']}* "
-        f"{last_game['score']} vs {last_game['opponent']}{type_label}"
+        f"{emoji} *{outcome}* {last_game['score']}  vs {last_game['opponent']}"
+        f"   _{last_game['date']}_{type_label}"
     )
 
 
-def post_to_slack(message):
+def build_blocks(date_str, d1_text, csu_text):
+    blocks = [
+        {
+            "type": "header",
+            "text": {"type": "plain_text", "text": f"NCAA D1 Lacrosse — {date_str}"},
+        },
+        {
+            "type": "section",
+            "text": {"type": "mrkdwn", "text": d1_text},
+        },
+        {"type": "divider"},
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": f"*CSU MCLA — Latest Result*\n{csu_text}",
+            },
+        },
+    ]
+    return blocks
+
+
+def post_to_slack(blocks, fallback_text):
     webhook_url = os.environ.get("SLACK_WEBHOOK_ICEMAN")
     if not webhook_url:
         raise ValueError("SLACK_WEBHOOK_ICEMAN environment variable not set")
 
-    resp = requests.post(webhook_url, json={"text": message}, timeout=10)
+    payload = {"text": fallback_text, "blocks": blocks}
+    resp = requests.post(webhook_url, json=payload, timeout=10)
     resp.raise_for_status()
 
 
 if __name__ == "__main__":
-    yesterday_str = (date.today() - timedelta(days=1)).strftime("%B %-d, %Y")
+    import argparse
+    from datetime import datetime
 
-    d1 = get_d1_scores()
-    csu = get_csu_mcla_result()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--date", help="Date to fetch D1 scores for (YYYYMMDD), defaults to yesterday")
+    args = parser.parse_args()
 
-    message = (
-        f"*NCAA D1 Lacrosse \u2014 {yesterday_str}*\n"
-        f"{d1}\n\n"
-        f"*CSU MCLA \u2014 Latest Result*\n"
-        f"{csu}"
-    )
+    if args.date:
+        date_str = datetime.strptime(args.date, "%Y%m%d").strftime("%B %-d, %Y")
+    else:
+        date_str = (date.today() - timedelta(days=1)).strftime("%B %-d, %Y")
 
-    post_to_slack(message)
-    print(message)
+    d1_text, no_games_msg = get_d1_scores(args.date)
+    d1_text = d1_text or no_games_msg
+    csu_text = get_csu_mcla_result()
+
+    blocks = build_blocks(date_str, d1_text, csu_text)
+
+    # Print preview
+    print(f"=== NCAA D1 Lacrosse — {date_str} ===\n")
+    print(d1_text)
+    print(f"\n--- CSU MCLA — Latest Result ---\n{csu_text}\n")
+
+    post_to_slack(blocks, f"NCAA D1 Lacrosse — {date_str}")
