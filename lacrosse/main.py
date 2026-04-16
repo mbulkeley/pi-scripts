@@ -1,81 +1,121 @@
-def lacrosse_scores(division):
-    import requests as req
-    from datetime import date
-    from bs4 import BeautifulSoup
-    from datetime import timedelta
+import os
+import requests
+from datetime import date, timedelta
+from bs4 import BeautifulSoup
 
-    yesterday = (date.today() - timedelta(days=1)).strftime("%Y/%m/%d")
-    # yesterday = "2021/04/03"
-    header = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) "
-                      "Chrome/89.0.4389.90 Safari/537.36",
-        "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8"
-    }
-    url = f"https://www.ncaa.com/scoreboard/lacrosse-men/{division}/{yesterday}/all-conf"
 
-    resp = req.get(url, headers=header)
-    soup = BeautifulSoup(resp.text, "lxml")
-    games = soup.find_all(class_=["gamePod-status", "gamePod-game-team-name", "gamePod-game-team-score"])
+def get_d1_scores():
+    yesterday = (date.today() - timedelta(days=1)).strftime("%Y%m%d")
+    url = (
+        "https://site.api.espn.com/apis/site/v2/sports/lacrosse"
+        f"/mens-college-lacrosse/scoreboard?dates={yesterday}"
+    )
 
-    if division == 'd1':
-        scores = '*** Division I ***'
-        division = 'Division I'
-    else:
-        scores = '*** Division III ***'
-        division = 'Division III'
+    resp = requests.get(url, timeout=10)
+    resp.raise_for_status()
+    data = resp.json()
 
-    if len(games) > 0:
-        index = 0
-        while index < len(games):
-            if index == 0:
-                scores += '\n'
+    lines = []
+    for event in data.get("events", []):
+        for competition in event.get("competitions", []):
+            status = competition.get("status", {}).get("type", {}).get("name", "")
+            if status != "STATUS_FINAL":
+                continue
+
+            competitors = competition.get("competitors", [])
+            home = next((c for c in competitors if c["homeAway"] == "home"), None)
+            away = next((c for c in competitors if c["homeAway"] == "away"), None)
+            if not home or not away:
+                continue
+
+            home_name = home["team"]["displayName"]
+            away_name = away["team"]["displayName"]
+            home_score = int(home.get("score", 0))
+            away_score = int(away.get("score", 0))
+
+            if home_score > away_score:
+                lines.append(f"*{home_name}* {home_score}, {away_name} {away_score}")
             else:
-                scores += '\n\n'
-            scores += f"{games[index].text.rjust(25)}\n{games[index + 1].text}" \
-                      f"{games[index + 2].text.rjust(25 - len(games[index + 1].text))}\n" \
-                      f"{games[index + 3].text}{games[index + 4].text.rjust(25 - len(games[index + 3].text))}"
-            index += 5
-    else:
-        scores = f"No NCAA {division} Lacrosse games yesterday."
-    return scores
+                lines.append(f"*{away_name}* {away_score}, {home_name} {home_score}")
+
+    return "\n".join(lines) if lines else "No NCAA D1 lacrosse games yesterday."
 
 
-def post_to_flowdock(message, about):
-    import os
-    import json
-    import requests
-    from requests.auth import HTTPBasicAuth
+def get_csu_mcla_result():
+    url = "https://mcla.us/teams/colorado-state/2026"
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/120.0.0.0 Safari/537.36"
+        )
+    }
 
-    flowdock_api_key = os.environ.get('FLOWDOCK_API_KEY')
-    flowdock_org = os.environ.get('FLOWDOCK_ORG')
-    flowdock_flow = os.environ.get('FLOWDOCK_FLOW')
-    url = f'https://api.flowdock.com/flows/{flowdock_org}/{flowdock_flow}/messages'
-    flowdock_message = message
-    payload = {'content': flowdock_message, 'event': 'message'}
-    headers = {'X-flowdock-wait-for-message': 'true', 'content-type': 'application/json'}
+    resp = requests.get(url, headers=headers, timeout=10, allow_redirects=True)
+    resp.raise_for_status()
 
-    try:
-        session = requests.Session()
-        response = session.post(url, data=json.dumps(payload), headers=headers,
-                                auth=HTTPBasicAuth(flowdock_api_key, 'DUMMY'))
-        session.close()
-    except requests.exceptions.HTTPError as e:
-        print(f'An HTTPError occurred posting to Flowdock: {e}')
-        print.error('*** ERROR ***')
-        session.close()
-    except requests.RequestException as e:
-        print.error(f'A general error occurred posting to Flowdock: {e}')
-        print.error('*** ERROR ***')
-        session.close()
+    soup = BeautifulSoup(resp.text, "html.parser")
+    tiles = soup.find_all("div", class_="game-opponent-tile")
+
+    last_game = None
+    for tile in tiles:
+        outcome_span = tile.find("span", class_="outcome")
+        if not outcome_span:
+            continue
+
+        date_div = tile.find("div", class_="game-opponent-tile__date")
+        date_parts = [p.get_text(strip=True) for p in date_div.find_all("p")] if date_div else []
+        game_date = " ".join(date_parts)
+
+        name_p = tile.find("p", class_="opponent__name")
+        opponent = name_p.get_text(strip=True) if name_p else "Unknown"
+
+        outcome = outcome_span.get_text(strip=True)
+        score_span = tile.find("span", class_="score")
+        score = score_span.get_text(strip=True) if score_span else "?"
+
+        type_div = tile.find("div", class_="game-opponent-tile__type")
+        game_type = type_div.get_text(strip=True) if type_div else ""
+
+        last_game = {
+            "date": game_date,
+            "opponent": opponent,
+            "outcome": outcome,
+            "score": score,
+            "type": game_type,
+        }
+
+    if not last_game:
+        return "No CSU MCLA results found."
+
+    type_label = f" ({last_game['type']})" if last_game["type"] else ""
+    return (
+        f"{last_game['date']}: Colorado State *{last_game['outcome']}* "
+        f"{last_game['score']} vs {last_game['opponent']}{type_label}"
+    )
 
 
-if __name__ == '__main__':
-    # Get Division I & Division III scores
-    division_1 = lacrosse_scores('d1')
-    division_3 = lacrosse_scores('d3')
-    # Concatenate the scores
-    yesterdays_scores = division_1 + '\n\n' + division_3
-    # Post the scores to Flowdock
-    post_to_flowdock(f"Yesterday's Lacrosse Scores\n```\n{yesterdays_scores}\n```", "NCAA Lacrosse Scores")
+def post_to_slack(message):
+    webhook_url = os.environ.get("SLACK_WEBHOOK_ICEMAN")
+    if not webhook_url:
+        raise ValueError("SLACK_WEBHOOK_ICEMAN environment variable not set")
+
+    resp = requests.post(webhook_url, json={"text": message}, timeout=10)
+    resp.raise_for_status()
 
 
+if __name__ == "__main__":
+    yesterday_str = (date.today() - timedelta(days=1)).strftime("%B %-d, %Y")
+
+    d1 = get_d1_scores()
+    csu = get_csu_mcla_result()
+
+    message = (
+        f"*NCAA D1 Lacrosse \u2014 {yesterday_str}*\n"
+        f"{d1}\n\n"
+        f"*CSU MCLA \u2014 Latest Result*\n"
+        f"{csu}"
+    )
+
+    post_to_slack(message)
+    print(message)
