@@ -59,8 +59,8 @@ def get_d1_scores(for_date=None):
             if not home or not away:
                 continue
 
-            home_name = home["team"].get("shortDisplayName") or home["team"]["displayName"]
-            away_name = away["team"].get("shortDisplayName") or away["team"]["displayName"]
+            home_name = (home["team"].get("shortDisplayName") or home["team"]["displayName"]).removesuffix(" University")
+            away_name = (away["team"].get("shortDisplayName") or away["team"]["displayName"]).removesuffix(" University")
             home_score = int(home.get("score", 0))
             away_score = int(away.get("score", 0))
 
@@ -112,7 +112,7 @@ def get_csu_mcla_result():
         game_date = " ".join(date_parts)
 
         name_p = tile.find("p", class_="opponent__name")
-        opponent = name_p.get_text(strip=True) if name_p else "Unknown"
+        opponent = name_p.get_text(separator=" ", strip=True) if name_p else "Unknown"
 
         outcome = outcome_span.get_text(strip=True)
         score_span = tile.find("span", class_="score")
@@ -133,10 +133,9 @@ def get_csu_mcla_result():
         return "_No CSU MCLA results found._"
 
     outcome = last_game["outcome"]
-    emoji = "✅" if outcome == "W" else "❌"
     type_label = f"  _{last_game['type']}_" if last_game["type"] else ""
     return (
-        f"{emoji} *{outcome}* {last_game['score']}  vs {last_game['opponent']}"
+        f"*{outcome}* {last_game['score']}  vs {last_game['opponent']}"
         f"   _{last_game['date']}_{type_label}"
     )
 
@@ -144,20 +143,20 @@ def get_csu_mcla_result():
 def build_blocks(date_str, d1_text, csu_text):
     blocks = [
         {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": f"*CSU MCLA — Latest Result*\n{csu_text}",
+            },
+        },
+        {"type": "divider"},
+        {
             "type": "header",
             "text": {"type": "plain_text", "text": f"NCAA D1 Lacrosse — {date_str}"},
         },
         {
             "type": "section",
             "text": {"type": "mrkdwn", "text": d1_text},
-        },
-        {"type": "divider"},
-        {
-            "type": "section",
-            "text": {
-                "type": "mrkdwn",
-                "text": f"*CSU MCLA — Latest Result*\n{csu_text}",
-            },
         },
     ]
     return blocks
@@ -193,8 +192,8 @@ if __name__ == "__main__":
     blocks = build_blocks(date_str, d1_text, csu_text)
 
     # Print preview
+    print(f"--- CSU MCLA — Latest Result ---\n{csu_text}\n")
     print(f"=== NCAA D1 Lacrosse — {date_str} ===\n")
     print(d1_text)
-    print(f"\n--- CSU MCLA — Latest Result ---\n{csu_text}\n")
 
     post_to_slack(blocks, f"NCAA D1 Lacrosse — {date_str}")
