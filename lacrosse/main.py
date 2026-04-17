@@ -5,6 +5,34 @@ from bs4 import BeautifulSoup
 
 WATCHED_TEAMS = ["Delaware", "Denver", "Air Force"]
 
+def format_scoreboard(games):
+    """Format a list of game dicts into a monospace scoreboard code block.
+
+    Each game dict: {status, home, home_score, away, away_score, is_watched}
+    """
+    lines = []
+    for i in range(0, len(games), 2):
+        left = games[i]
+        right = games[i + 1] if i + 1 < len(games) else None
+
+        marker = "* " if left["is_watched"] else "  "
+        if right:
+            r_marker = "* " if right["is_watched"] else "  "
+            lines.append(f"{marker}{left['status']:<28}{r_marker}{right['status']}")
+            lines.append(f"  {left['home']:<22}{left['home_score']:<8}  {right['home']:<22}{right['home_score']}")
+            lines.append(f"  {left['away']:<22}{left['away_score']:<8}  {right['away']:<22}{right['away_score']}")
+        else:
+            lines.append(f"{marker}{left['status']}")
+            lines.append(f"  {left['home']:<22}{left['home_score']}")
+            lines.append(f"  {left['away']:<22}{left['away_score']}")
+
+        lines.append("")
+
+    while lines and lines[-1] == "":
+        lines.pop()
+
+    return "```\n" + "\n".join(lines) + "\n```"
+
 
 def get_d1_scores(for_date=None):
     yesterday = for_date or (date.today() - timedelta(days=1)).strftime("%Y%m%d")
@@ -17,8 +45,7 @@ def get_d1_scores(for_date=None):
     resp.raise_for_status()
     data = resp.json()
 
-    watched = []
-    others = []
+    games = []
 
     for event in data.get("events", []):
         for competition in event.get("competitions", []):
@@ -32,35 +59,30 @@ def get_d1_scores(for_date=None):
             if not home or not away:
                 continue
 
-            home_name = home["team"]["displayName"]
-            away_name = away["team"]["displayName"]
+            home_name = home["team"].get("shortDisplayName") or home["team"]["displayName"]
+            away_name = away["team"].get("shortDisplayName") or away["team"]["displayName"]
             home_score = int(home.get("score", 0))
             away_score = int(away.get("score", 0))
-
-            if home_score > away_score:
-                line = f"*{home_name}* {home_score},  {away_name} {away_score}"
-            else:
-                line = f"*{away_name}* {away_score},  {home_name} {home_score}"
 
             is_watched = any(
                 t.lower() in home_name.lower() or t.lower() in away_name.lower()
                 for t in WATCHED_TEAMS
             )
-            if is_watched:
-                watched.append(f"🔹 {line}")
-            else:
-                others.append(f"     {line}")
 
-    if not watched and not others:
+            games.append({
+                "status": "FINAL",
+                "home": home_name, "home_score": home_score,
+                "away": away_name, "away_score": away_score,
+                "is_watched": is_watched,
+            })
+
+    if not games:
         return None, "No NCAA D1 lacrosse games yesterday."
 
-    sections = []
-    if watched:
-        sections.append("\n".join(watched))
-    if others:
-        sections.append("\n".join(others))
+    # Watched games first, then others
+    games.sort(key=lambda g: (0 if g["is_watched"] else 1))
 
-    return "\n\n".join(sections), None
+    return games, None
 
 
 def get_csu_mcla_result():
@@ -164,8 +186,8 @@ if __name__ == "__main__":
     else:
         date_str = (date.today() - timedelta(days=1)).strftime("%B %-d, %Y")
 
-    d1_text, no_games_msg = get_d1_scores(args.date)
-    d1_text = d1_text or no_games_msg
+    d1_games, no_games_msg = get_d1_scores(args.date)
+    d1_text = format_scoreboard(d1_games) if d1_games else no_games_msg
     csu_text = get_csu_mcla_result()
 
     blocks = build_blocks(date_str, d1_text, csu_text)
