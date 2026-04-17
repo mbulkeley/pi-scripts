@@ -1,4 +1,5 @@
 #!/bin/bash
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 source /etc/environment
 LOGFILE="/home/pi/projects/speedtest/logs/speedtest_log.csv"
 DATE=$(date +"%Y-%m-%d %H:%M:%S")
