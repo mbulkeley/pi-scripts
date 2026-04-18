@@ -5,7 +5,7 @@ LOGFILE="/home/pi/projects/speedtest/logs/speedtest_log.csv"
 DATE=$(date +"%Y-%m-%d %H:%M:%S")
 
 # Run test
-RESULT=$(/usr/bin/speedtest-cli --json)
+RESULT=$(/usr/bin/speedtest --json)
 PING=$(echo $RESULT | /usr/bin/jq '.ping')
 DOWNLOAD=$(echo $RESULT | /usr/bin/jq '.download' | awk '{print $1/1000000}')
 UPLOAD=$(echo $RESULT | /usr/bin/jq '.upload' | awk '{print $1/1000000}')
