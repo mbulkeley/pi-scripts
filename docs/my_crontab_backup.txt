@@ -21,15 +21,15 @@
 # For more information see the manual pages of crontab(5) and cron(8)
 # 
 # m h  dom mon dow   command
-#
+
+# Temp monitor every 15 minutes
+*/15 * * * * /bin/bash /home/pi/projects/temp_monitor/temp_monitor.sh >> /home/pi/projects/temp_monitor/logs/temp_monitor.log 2>&1
+
 # Slackbot daily at 9:05am
 05 9 * * * /home/pi/projects/venv/bin/python3 /home/pi/projects/slackbot/slackbot.py >/dev/null 2>&1
 
 # Lacrosse Scores at 9:30am
 30 9 * * * /home/pi/projects/venv/bin/python3 /home/pi/projects/lacrosse/main.py >/dev/null 2>&1
 
-# Temp monitor every 15 minutes
-*/15 * * * * /bin/bash /home/pi/projects/temp_monitor/temp_monitor.sh >/dev/null 2>&1
-
 # Speedtest at 5:30pm
-30 17 * * * /bin/bash /home/pi/projects/speedtest/speedtest_logger.sh >/dev/null 2>&1
+30 17 * * * /bin/bash /home/pi/projects/speedtest/speedtest_logger.sh >> /home/pi/projects/speedtest/logs/speedtest.log 2>&1
