@@ -5,7 +5,7 @@ export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 OXFORD="pi@192.168.178.201"
 DEST="$OXFORD:/home/pi/Backup/iceman"
 SSH_OPT="-e \"ssh -i ~/.ssh/id_ed25519_oxford\""
-LOG="/home/pi/projects/rsync/logs/rsync.log"
+LOG="/home/pi/projects/iceman/rsync/logs/rsync.log"
 MAX_LOG_KB=500
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 
@@ -18,7 +18,7 @@ fi
 echo "[$TIMESTAMP] Starting rsync backup to OXFORD" >> "$LOG"
 
 # Dump crontab
-crontab -l > /home/pi/projects/rsync/crontab.bak 2>/dev/null
+crontab -l > /home/pi/projects/iceman/rsync/crontab.bak 2>/dev/null
 
 # Sync projects/ (excluding venv, caches)
 rsync -avz -e "ssh -i ~/.ssh/id_ed25519_oxford" \
@@ -37,7 +37,7 @@ rsync -avz -e "ssh -i ~/.ssh/id_ed25519_oxford" \
 
 # Sync crontab backup
 rsync -avz -e "ssh -i ~/.ssh/id_ed25519_oxford" \
-  ~/projects/rsync/crontab.bak "$DEST/crontab.bak" >> "$LOG" 2>&1
+  ~/projects/iceman/rsync/crontab.bak "$DEST/crontab.bak" >> "$LOG" 2>&1
 
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 echo "[$TIMESTAMP] rsync backup complete" >> "$LOG"

@@ -259,7 +259,7 @@ def post_to_slack(message, about, logger):
 def main():
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
-    handler = logging.FileHandler("/home/pi/projects/logs/slackbot.log")
+    handler = logging.FileHandler("/home/pi/projects/iceman/logs/slackbot.log")
     handler.setLevel(logging.INFO)
     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s', datefmt='%m/%d/%Y %H:%M:%S')
     handler.setFormatter(formatter)
