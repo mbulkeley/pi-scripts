@@ -1,6 +1,6 @@
 # pi-scripts
 
-Automation scripts for the ICEMAN homelab — a Raspberry Pi 3 Model B in Amsterdam, Netherlands. Scripts post to Slack and run via cron.
+Automation scripts for the ICEMAN and OXFORD homelabs in Amsterdam, Netherlands. Scripts post to Slack and run via cron.
 
 ## Repository Structure
 
@@ -20,11 +20,17 @@ pi-scripts/
 │   │   └── speedtest_logger.sh     ← network speedtest logger
 │   └── temp_monitor/
 │       └── temp_monitor.sh         ← Pi temperature monitor
-└── venv/                           ← shared Python virtual environment
+├── oxford/                         ← OXFORD (Pi 4 Model B, 64-bit)
+│   ├── speedtest/
+│   │   └── speedtest_logger.sh     ← network speedtest logger
+│   └── temp_monitor/
+│       └── temp_monitor.sh         ← Pi temperature monitor
+└── venv/                           ← shared Python virtual environment (ICEMAN)
 ```
 
-## Hardware
+## Devices
 
+### ICEMAN
 | Item | Detail |
 |------|--------|
 | Model | Raspberry Pi 3 Model B Rev 1.2 |
@@ -32,8 +38,17 @@ pi-scripts/
 | RAM | 922MB |
 | Storage | 32GB SanDisk High Endurance microSD |
 | IP | 192.168.178.187 |
+| Role | Dev playground — Python, bots, experiments, cron jobs |
 
-## Scripts
+### OXFORD
+| Item | Detail |
+|------|--------|
+| Model | Raspberry Pi 4 Model B |
+| OS | Raspbian Bullseye — 64-bit |
+| IP | 192.168.178.201 |
+| Role | Infrastructure — Nextcloud, Docker, Cloudflare Tunnel, backups |
+
+## ICEMAN Scripts
 
 ### slackbot
 Posts a daily morning briefing to Slack at 9:05am including:
@@ -57,7 +72,15 @@ Runs daily at 5:30pm. Logs network speedtest results (ping, download, upload, IS
 ### rsync
 Runs weekly on Sundays at 2am. Backs up `~/projects/`, home directory, and crontab to OXFORD (`~/Backup/iceman/`).
 
-## Crontab
+## OXFORD Scripts
+
+### temp_monitor
+Runs every 15 minutes. Checks CPU temperature and posts a Slack alert if it exceeds 65°C.
+
+### speedtest
+Runs daily at 5:15pm. Logs network speedtest results to Slack using the Ookla speedtest CLI.
+
+## ICEMAN Crontab
 
 ```
 */15 * * * * /bin/bash /home/pi/projects/iceman/temp_monitor/temp_monitor.sh >> /home/pi/projects/iceman/temp_monitor/logs/temp_monitor.log 2>&1
@@ -67,14 +90,22 @@ Runs weekly on Sundays at 2am. Backs up `~/projects/`, home directory, and cront
 30 17 * * *  /bin/bash /home/pi/projects/iceman/speedtest/speedtest_logger.sh >> /home/pi/projects/iceman/speedtest/logs/speedtest.log 2>&1
 ```
 
+## OXFORD Crontab
+
+```
+*/5 * * * *   docker exec -u 33 nextcloud-app php -f /var/www/html/cron.php >> /home/pi/nextcloud/logs/nextcloud-cron.log 2>&1
+*/15 * * * *  /home/pi/Projects/tempmonitor/temp_monitor.sh >> /home/pi/Projects/tempmonitor/logs/temp_monitor.log 2>&1
+15 17 * * *   /home/pi/Projects/speedtest/speedtest_logger.sh >> /home/pi/Projects/speedtest/logs/speedtest.log 2>&1
+```
+
 ## Setup
 
-### Prerequisites
+### ICEMAN Prerequisites
 ```bash
 sudo apt install python3 python3-venv libopenblas0
 ```
 
-### Install
+### ICEMAN Install
 ```bash
 git clone git@github.com:mbulkeley/pi-scripts.git ~/projects
 cd ~/projects
@@ -87,6 +118,7 @@ pip install requests pandas python-dateutil holidays beautifulsoup4 lxml
 Stored in `/etc/environment` (no quotes around values):
 ```
 SLACK_WEBHOOK_ICEMAN=https://hooks.slack.com/services/...
+SLACK_WEBHOOK_OXFORD=https://hooks.slack.com/services/...
 ```
 
 ## Security
