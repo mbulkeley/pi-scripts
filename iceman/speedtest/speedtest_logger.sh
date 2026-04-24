@@ -1,11 +1,12 @@
 #!/bin/bash
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-source /etc/environment
+export SLACK_WEBHOOK_ICEMAN=$(grep SLACK_WEBHOOK_ICEMAN /etc/environment | cut -d= -f2)
 LOGFILE="/home/pi/projects/iceman/speedtest/logs/speedtest_log.csv"
 DATE=$(date +"%Y-%m-%d %H:%M:%S")
 
 # Run test
 RESULT=$(/usr/bin/speedtest --json)
+TEMP=$(vcgencmd measure_temp | grep -o '[0-9]*\.[0-9]*')
 PING=$(echo $RESULT | /usr/bin/jq '.ping')
 DOWNLOAD=$(echo $RESULT | /usr/bin/jq '.download' | awk '{print $1/1000000}')
 UPLOAD=$(echo $RESULT | /usr/bin/jq '.upload' | awk '{print $1/1000000}')
@@ -23,4 +24,4 @@ echo "$DATE,$PING,$DOWNLOAD,$UPLOAD,$ISP" >> "$LOGFILE"
 SLACK_WEBHOOK="${SLACK_WEBHOOK_ICEMAN}"
 curl -s -X POST "$SLACK_WEBHOOK" \
   -H 'Content-type: application/json' \
-  --data "{\"text\":\"📡 *Speedtest Results - $HOSTNAME*\n*Date:* $DATE\n*Ping:* ${PING}ms\n*Download:* ${DOWNLOAD} Mbps\n*Upload:* ${UPLOAD} Mbps\n*ISP:* $ISP\"}"
+  --data "{\"text\":\"📡 *Speedtest Results - $HOSTNAME*\n*Date:* $DATE\n*Ping:* ${PING}ms\n*Download:* ${DOWNLOAD} Mbps\n*Upload:* ${UPLOAD} Mbps\n*ISP:* $ISP\n*Temp:* ${TEMP}°C\"}"
