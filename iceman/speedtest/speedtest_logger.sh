@@ -5,12 +5,12 @@ LOGFILE="/home/pi/projects/iceman/speedtest/logs/speedtest_log.csv"
 DATE=$(date +"%Y-%m-%d %H:%M:%S")
 
 # Run test
-RESULT=$(/usr/bin/speedtest --json)
+RESULT=$(/usr/local/bin/speedtest-ookla --format=json --accept-license --accept-gdpr)
 TEMP=$(vcgencmd measure_temp | grep -o '[0-9]*\.[0-9]*')
-PING=$(echo $RESULT | /usr/bin/jq '.ping')
-DOWNLOAD=$(echo $RESULT | /usr/bin/jq '.download' | awk '{print $1/1000000}')
-UPLOAD=$(echo $RESULT | /usr/bin/jq '.upload' | awk '{print $1/1000000}')
-ISP=$(echo $RESULT | /usr/bin/jq -r '.client.isp')
+PING=$(echo $RESULT | jq '.ping.latency')
+DOWNLOAD=$(echo $RESULT | jq '.download.bandwidth' | awk '{print $1/125000}')
+UPLOAD=$(echo $RESULT | jq '.upload.bandwidth' | awk '{print $1/125000}')
+ISP=$(echo $RESULT | jq -r '.isp')
 
 # Create header if file doesn't exist
 if [ ! -f "$LOGFILE" ]; then
