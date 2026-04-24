@@ -36,7 +36,7 @@ pi-scripts/
 | Model | Raspberry Pi 3 Model B Rev 1.2 |
 | OS | Raspbian GNU/Linux 13 (Trixie) — 32-bit armhf |
 | RAM | 922MB |
-| Storage | 32GB SanDisk High Endurance microSD |
+| Storage | 32GB SanDisk High Endurance microSD (16% used) |
 | IP | 192.168.178.187 |
 | Role | Dev playground — Python, bots, experiments, cron jobs |
 
@@ -45,8 +45,8 @@ pi-scripts/
 |------|--------|
 | Model | Raspberry Pi 4 Model B |
 | OS | Raspbian Bullseye — 64-bit |
-| RAM | |
-| Storage | 1 TB Western Digital SSD |
+| RAM | 2GB |
+| Storage | 1TB Western Digital SSD (55% used) |
 | IP | 192.168.178.201 |
 | Role | Infrastructure — Nextcloud, Docker, Cloudflare Tunnel, backups |
 
