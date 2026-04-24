@@ -45,6 +45,8 @@ pi-scripts/
 |------|--------|
 | Model | Raspberry Pi 4 Model B |
 | OS | Raspbian Bullseye — 64-bit |
+| RAM | |
+| Storage | 1 TB Western Digital SSD |
 | IP | 192.168.178.201 |
 | Role | Infrastructure — Nextcloud, Docker, Cloudflare Tunnel, backups |
 
