@@ -47,44 +47,34 @@ _GET_SESSION = _make_session(["GET"])
 _POST_SESSION = _make_session(["POST"], total=2, backoff_factor=0.5)
 
 
-def format_scoreboard(games: list[dict[str, Any]]) -> str:
-    """Render a list of game dicts as a monospace two-column scoreboard.
+def format_scoreboard(games: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Render a list of game dicts as mobile-friendly Slack Block Kit blocks.
+
+    Each game gets its own section block with a single-column layout.
+    Watched games are marked with a 🥍 emoji.
 
     Args:
         games: List of dicts with keys: status, home, home_score, away,
             away_score, is_watched. Watched games should be sorted first.
 
     Returns:
-        Slack mrkdwn code block string.
+        List of Slack Block Kit block dicts.
     """
-    lines = []
-    for i in range(0, len(games), 2):
-        left = games[i]
-        right = games[i + 1] if i + 1 < len(games) else None
-
-        l_mark = "* " if left["is_watched"] else "  "
-        if right:
-            r_mark = "* " if right["is_watched"] else "  "
-            lines.append(f"{l_mark}{left['status']:<28}{r_mark}{right['status']}")
-            lines.append(
-                f"  {left['home']:<22}{left['home_score']:<8}"
-                f"  {right['home']:<22}{right['home_score']}"
-            )
-            lines.append(
-                f"  {left['away']:<22}{left['away_score']:<8}"
-                f"  {right['away']:<22}{right['away_score']}"
-            )
-        else:
-            lines.append(f"{l_mark}{left['status']}")
-            lines.append(f"  {left['home']:<22}{left['home_score']}")
-            lines.append(f"  {left['away']:<22}{left['away_score']}")
-
-        lines.append("")
-
-    while lines and lines[-1] == "":
-        lines.pop()
-
-    return "```\n" + "\n".join(lines) + "\n```"
+    blocks = []
+    for game in games:
+        marker = "🥍 " if game["is_watched"] else ""
+        text = (
+            f"{marker}*{game['home']}* {game['home_score']} "
+            f"— {game['away_score']} *{game['away']}*\n"
+            f"_{game['status']}_"
+        )
+        blocks.append(
+            {
+                "type": "section",
+                "text": {"type": "mrkdwn", "text": text},
+            }
+        )
+    return blocks
 
 
 def get_d1_scores(
@@ -232,20 +222,23 @@ def get_csu_mcla_result() -> str:
 
 def build_blocks(
     date_str: str,
-    d1_text: str,
+    d1_game_blocks: list[dict[str, Any]] | None,
+    no_games_msg: str | None,
     csu_text: str,
 ) -> list[dict[str, Any]]:
     """Assemble the Slack Block Kit payload.
 
     Args:
         date_str: Human-readable date string (e.g. "April 16, 2026").
-        d1_text: Formatted D1 scoreboard or no-games message.
+        d1_game_blocks: List of Block Kit blocks from format_scoreboard,
+            or None if there are no games.
+        no_games_msg: Message to display when there are no games, or None.
         csu_text: Formatted CSU MCLA result string.
 
     Returns:
         List of Slack Block Kit block dicts.
     """
-    return [
+    blocks: list[dict[str, Any]] = [
         {
             "type": "section",
             "text": {
@@ -261,11 +254,19 @@ def build_blocks(
                 "text": f"NCAA D1 Lacrosse — {date_str}",
             },
         },
-        {
-            "type": "section",
-            "text": {"type": "mrkdwn", "text": d1_text},
-        },
     ]
+
+    if d1_game_blocks:
+        blocks.extend(d1_game_blocks)
+    else:
+        blocks.append(
+            {
+                "type": "section",
+                "text": {"type": "mrkdwn", "text": f"_{no_games_msg}_"},
+            }
+        )
+
+    return blocks
 
 
 def post_to_slack(blocks: list[dict[str, Any]], fallback_text: str) -> None:
@@ -320,13 +321,13 @@ if __name__ == "__main__":
 
     try:
         d1_games, no_games_msg = get_d1_scores(args.date)
-        d1_text = format_scoreboard(d1_games) if d1_games else no_games_msg
+        d1_game_blocks = format_scoreboard(d1_games) if d1_games else None
         csu_text = get_csu_mcla_result()
 
-        blocks = build_blocks(date_str, d1_text, csu_text)
+        blocks = build_blocks(date_str, d1_game_blocks, no_games_msg, csu_text)
 
         logger.info("--- CSU MCLA ---\n%s", csu_text)
-        logger.info("--- NCAA D1 Lacrosse: %s ---\n%s", date_str, d1_text)
+        logger.info("--- NCAA D1 Lacrosse: %s ---\n%s", date_str, d1_game_blocks)
 
         post_to_slack(blocks, f"NCAA D1 Lacrosse — {date_str}")
     except Exception:
