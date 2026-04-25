@@ -50,7 +50,11 @@ _POST_SESSION = _make_session(["POST"], total=2, backoff_factor=0.5)
 def format_scoreboard(games: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Render a list of game dicts as mobile-friendly Slack Block Kit blocks.
 
-    Each game gets its own section block with a single-column layout.
+    Each game gets its own section block with a stacked single-column layout:
+        FINAL
+        Home Team    13
+        Away Team    10
+
     Watched games are marked with a 🥍 emoji.
 
     Args:
@@ -64,9 +68,9 @@ def format_scoreboard(games: list[dict[str, Any]]) -> list[dict[str, Any]]:
     for game in games:
         marker = "🥍 " if game["is_watched"] else ""
         text = (
-            f"{marker}*{game['home']}* {game['home_score']} "
-            f"— {game['away_score']} *{game['away']}*\n"
-            f"_{game['status']}_"
+            f"{marker}_{game['status']}_\n"
+            f"{game['home']}   *{game['home_score']}*\n"
+            f"{game['away']}   *{game['away_score']}*"
         )
         blocks.append(
             {
