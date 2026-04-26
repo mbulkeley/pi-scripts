@@ -67,10 +67,24 @@ def format_scoreboard(games: list[dict[str, Any]]) -> list[dict[str, Any]]:
     blocks = []
     for game in games:
         marker = "🥍 " if game["is_watched"] else ""
+        home_score = game['home_score']
+        away_score = game['away_score']
+
+        if home_score > away_score:
+            home_str = f"*{game['home']} — {home_score}*"
+            away_str = f"{game['away']} — {away_score}"
+        elif away_score > home_score:
+            home_str = f"{game['home']} — {home_score}"
+            away_str = f"*{game['away']} — {away_score}*"
+        else:
+            # Tied
+            home_str = f"{game['home']} — {home_score}"
+            away_str = f"{game['away']} — {away_score}"
+        
         text = (
             f"{marker}_{game['status']}_\n"
-            f"{game['home']} — {game['home_score']}\n"
-            f"{game['away']} — {game['away_score']}"
+            f"{home_str}\n"
+            f"{away_str}"
         )
         blocks.append(
             {
