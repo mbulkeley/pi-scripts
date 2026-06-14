@@ -148,6 +148,12 @@ def get_approximate_moon_phase(today):
         return 'New Moon'
 
 
+def degrees_to_compass(degrees):
+    directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']
+    index = round(degrees / 45) % 8
+    return directions[index]
+
+
 def get_weather(logger):
     degree = u'°'
     weather_array = ["Unable to get weather for today."]
@@ -169,7 +175,9 @@ def get_weather(logger):
             'https://api.open-meteo.com/v1/forecast'
             '?latitude=52.37&longitude=4.89'
             '&current=temperature_2m,weathercode'
-            '&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset,weathercode'
+            '&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset,weathercode,'
+            'wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant'
+            '&hourly=wind_gusts_10m'
             '&timezone=Europe%2FAmsterdam'
         )
         response = session.get(url)
@@ -219,10 +227,23 @@ def get_weather(logger):
             logger.error(f'Error getting moon phase: {e}')
             moon_phase = get_approximate_moon_phase(today)
 
+        wind_speed_max = parsed_json['daily']['wind_speed_10m_max'][0]
+        wind_gusts_max = parsed_json['daily']['wind_gusts_10m_max'][0]
+        wind_dir_deg = parsed_json['daily']['wind_direction_10m_dominant'][0]
+        wind_dir = degrees_to_compass(wind_dir_deg)
+
+        hourly_gusts = parsed_json['hourly']['wind_gusts_10m'][:24]
+        peak_gust_hour = hourly_gusts.index(max(hourly_gusts))
+        wind_line = (
+            f'Wind: {wind_dir} {wind_speed_max} km/h max '
+            f'(gusts up to {wind_gusts_max} km/h, worst around {peak_gust_hour:02d}:00)'
+        )
+
         weather_post = (
             f'It is: {curr_temp}{degree}C\n'
             f'Low: {forecast_low}{degree}C / High: {forecast_high}{degree}C\n'
-            f'Forecast: {forecast_text}\n\n'
+            f'Forecast: {forecast_text}\n'
+            f'{wind_line}\n\n'
             f'Sunrise: {sun_rise} / Sunset: {sun_set}\n'
             f'Day length: {day_length}\n\n'
             f'Moon Phase: {moon_phase}'
@@ -283,7 +304,7 @@ def main():
     holiday = get_holiday(current_time.date(), logger)
     daily_update += f"{holiday}\n\n"
 
-    daily_update += f"https://www.gocomics.com/calvinandhobbes/{date.today().strftime('%Y/%m/%d')}"
+    daily_update += "https://www.gocomics.com/calvinandhobbes"
 
     logger.debug(daily_update)
     post_to_slack(daily_update, "Daily Update", logger)
