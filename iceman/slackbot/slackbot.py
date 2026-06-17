@@ -261,7 +261,7 @@ def get_weather(logger):
 
 
 def post_to_slack(message, about, logger):
-    logger.info('Posting to Slack')
+    logger.info('Posting to personal Slack')
     webhook_url = os.environ.get('SLACK_WEBHOOK_ICEMAN')
 
     session = requests.Session()
@@ -273,6 +273,23 @@ def post_to_slack(message, about, logger):
         logger.error(f'An HTTPError occurred posting to Slack: {e}')
     except requests.RequestException as e:
         logger.error(f'A general error occurred posting to Slack: {e}')
+    finally:
+        session.close()
+
+
+def post_to_slack_work(message, about, logger):
+    logger.info('Posting to work Slack')
+    webhook_url = os.environ.get('SLACK_WEBHOOK_WORK')
+
+    session = requests.Session()
+    try:
+        response = session.post(webhook_url, json={'text': message})
+        response.raise_for_status()
+        logger.debug(f'Posted {about} to work Slack: {response.status_code}')
+    except requests.exceptions.HTTPError as e:
+        logger.error(f'An HTTPError occurred posting to work Slack: {e}')
+    except requests.RequestException as e:
+        logger.error(f'A general error occurred posting to work Slack: {e}')
     finally:
         session.close()
 
@@ -308,6 +325,7 @@ def main():
 
     logger.debug(daily_update)
     post_to_slack(daily_update, "Daily Update", logger)
+    post_to_slack_work(daily_update, "Daily Update", logger)
     logger.info('*** DONE ***')
 
 
