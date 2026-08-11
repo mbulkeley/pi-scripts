@@ -59,6 +59,9 @@ def get_on_this_day(logger):
 
 
 def get_holiday(the_date, logger):
+    # NOTE: Adding a holiday/birthday requires updates in TWO places:
+    #   1. message_list below — the display string keyed by holiday name
+    #   2. holiday_list.append() further down — the date-to-name mapping
     message_list = {
         'None': 'Today is not a holiday.',
         "New Year's Day, Nieuwjaarsdag": "Happy New Year! :fireworks:",
@@ -87,6 +90,9 @@ def get_holiday(the_date, logger):
         "Edie's Birthday": "Today is Edie's birthday!",
         "Cy's Birthday": "Today is Cy's birthday! (2004)",
         "Martha's Birthday": "Today is Martha's birthday! (2003)",
+        "Joost's Birthday": "Today is Joost's birthday!",
+        "Michelle's Birthday": "Today is Michelle's birthday!",
+        "Lucas & Sabine's Birthday": "Today is Lucas & Sabine's birthday! :birthday:",
         "Sabine's Birthday": "Today is Sabine's birthday! (1971)",
         'Winter Solstice': 'Winter Solstice. Longer days ahead!',
         "Laurie's Birthday": "Today is your wife's birthday! (1979)",
@@ -103,7 +109,7 @@ def get_holiday(the_date, logger):
                          f'{the_date.year}-06-04': 'Your Birthday',
                          f'{the_date.year}-08-02': "Joost's Birthday",
                          f'{the_date.year}-08-09': "Michelle's Birthday",
-                         f'{the_date.year}-08-11': "Sabine's Birthday",
+                         f'{the_date.year}-08-11': "Lucas & Sabine's Birthday",
                          f'{the_date.year}-08-14': "Cy's Birthday",
                          f'{the_date.year}-10-20': 'Your Anniversary',
                          f'{the_date.year}-10-31': 'Halloween',
