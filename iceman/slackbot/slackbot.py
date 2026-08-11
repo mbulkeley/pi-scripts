@@ -62,6 +62,8 @@ def get_holiday(the_date, logger):
     # NOTE: Adding a holiday/birthday requires updates in TWO places:
     #   1. message_list below — the display string keyed by holiday name
     #   2. holiday_list.append() further down — the date-to-name mapping
+    # NOTE: Do NOT set holiday_list.observed after append() — it clears the cache and wipes custom entries.
+    #       observed=False is set at construction time instead.
     message_list = {
         'None': 'Today is not a holiday.',
         "New Year's Day, Nieuwjaarsdag": "Happy New Year! :fireworks:",
