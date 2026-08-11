@@ -1,5 +1,12 @@
 # pi-scripts
 
+![Python](https://img.shields.io/badge/python-3.x-3776AB?logo=python&logoColor=white)
+![Platform](https://img.shields.io/badge/platform-Raspberry%20Pi-C51A4A?logo=raspberry-pi&logoColor=white)
+![Slack](https://img.shields.io/badge/posts%20to-Slack-4A154B?logo=slack&logoColor=white)
+![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)
+![Last Commit](https://img.shields.io/github/last-commit/mbulkeley/pi-scripts)
+[![Built with Claude](https://img.shields.io/badge/built%20with-Claude-D97757?logo=anthropic&logoColor=white)](https://claude.ai/code)
+
 Automation scripts for the ICEMAN and OXFORD homelabs in Amsterdam, Netherlands. Scripts post to Slack and run via cron.
 
 ## Repository Structure
