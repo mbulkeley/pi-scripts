@@ -103,7 +103,7 @@ def get_holiday(the_date, logger):
     }
     holiday_message = message_list.get('None')
 
-    holiday_list = holidays.US() + holidays.NL()
+    holiday_list = holidays.US(observed=False) + holidays.NL(observed=False)
     holiday_list.append({f'{the_date.year}-02-04': "Dad's Birthday",
                          f'{the_date.year}-04-29': "Martha's Birthday",
                          f'{the_date.year}-06-04': 'Your Birthday',
@@ -121,7 +121,6 @@ def get_holiday(the_date, logger):
                          })
 
     logger.debug(holiday_list.get(the_date))
-    holiday_list.observed = False
     if the_date in holiday_list:
         holiday_message = message_list.get(holiday_list.get(the_date))
 
