@@ -202,6 +202,19 @@ SLACK_WEBHOOK_WORK=https://hooks.slack.com/services/...
 - VNC on OXFORD (`vncserver-x11-serviced`, used periodically for Garmin watch fixes) is start-on-demand, not always-on: `sudo systemctl start vncserver-x11-serviced` before use, `stop` after. `security_monitor.sh` will alert if it's ever left running
 - `security_monitor.sh` on both hosts flags any TCP listener that isn't on the expected allowlist — see the ICEMAN/OXFORD Scripts sections above
 
+## VNC Access (OXFORD)
+Used periodically for Garmin watch fixes. Off by default — start it before use, stop it when done:
+```bash
+ssh oxford
+sudo systemctl start vncserver-x11-serviced
+sudo ufw allow from 192.168.178.0/24 to any port 5900 proto tcp comment 'VNC LAN access - Garmin fixes'  # first time only, rule persists after
+# ... do the Garmin fix ...
+sudo systemctl stop vncserver-x11-serviced
+```
+Connect to `192.168.178.201:5900` (LAN only — not exposed externally, ufw blocks it otherwise).
+
+**Known issue:** last tested 2026-08-16, the client connected but couldn't display the desktop. OXFORD boots to `graphical.target` with an active (idle) session on `seat0`, so a desktop session does exist — likely cause is RealVNC's Service Mode struggling to capture Raspberry Pi OS Trixie's default Wayland compositor. Not yet resolved; worth trying Virtual Mode (`vncserver-virtuald`) or forcing an X11 session if it recurs.
+
 ## License
 Private repository, all rights reserved. Not currently licensed for reuse.
 
