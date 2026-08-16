@@ -4,6 +4,7 @@ export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 OXFORD="pi@192.168.178.201"
 DEST="$OXFORD:/home/pi/Backup/iceman"
+SLACK_WEBHOOK="$SLACK_WEBHOOK_ICEMAN"
 SSH_OPT="-e \"ssh -i ~/.ssh/id_ed25519_oxford\""
 LOG="/home/pi/projects/iceman/rsync/logs/rsync.log"
 MAX_LOG_KB=500
@@ -40,5 +41,11 @@ rsync -avz -e "ssh -i ~/.ssh/id_ed25519_oxford" \
   ~/projects/iceman/rsync/crontab.bak "$DEST/crontab.bak" >> "$LOG" 2>&1
 
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+
+# Post to Slack
+curl -s -X POST "$SLACK_WEBHOOK" \
+  -H 'Content-type: application/json' \
+  --data "{\"text\":\"💾 *ICEMAN rsync backup complete*\n*Time:* $TIMESTAMP\n*Destination:* OXFORD\"}"
+
 echo "[$TIMESTAMP] rsync backup complete" >> "$LOG"
 echo "---" >> "$LOG"
