@@ -159,18 +159,35 @@ source venv/bin/activate
 pip install requests pandas python-dateutil holidays beautifulsoup4 lxml
 ```
 
+### OXFORD Prerequisites
+```bash
+sudo apt install bc rsync docker.io
+```
+Also needs an `id_ed25519_wolfman` SSH key pair (for `oxford_to_samsung.sh`) and Docker containers named `nextcloud-app`, `nextcloud-db`, `nextcloud-redis` running (checked by `health_monitor.sh`).
+
+### OXFORD Install
+```bash
+git clone git@github.com:mbulkeley/pi-scripts.git /home/pi/Projects/pi-scripts
+```
+No venv/pip install needed — OXFORD's scripts are all bash.
+
 ### Environment Variables
 Stored in `/etc/environment` (no quotes around values):
 ```
 SLACK_WEBHOOK_ICEMAN=https://hooks.slack.com/services/...
 SLACK_WEBHOOK_OXFORD=https://hooks.slack.com/services/...
+SLACK_WEBHOOK_WORK=https://hooks.slack.com/services/...
 ```
+`SLACK_WEBHOOK_WORK` is used by `slackbot.py` to mirror the daily briefing to a separate work Slack workspace.
 
 ## Security
 - SSH key auth only — no passwords
 - Secrets in `/etc/environment`, never in scripts
-- Gitleaks pre-commit hook to prevent accidental secret commits
+- Gitleaks pre-commit hook, plus a gitleaks GitHub Action on push/PR as a backstop for clones without the hook installed
 - Ruff for linting and formatting
+
+## License
+Private repository, all rights reserved. Not currently licensed for reuse.
 
 ## Notes
 - ICEMAN is 32-bit armhf — check compatibility before installing packages (NodeSource and official Docker repos do not support armhf)
