@@ -7,7 +7,7 @@
 ![Last Commit](https://img.shields.io/github/last-commit/mbulkeley/pi-scripts)
 [![Built with Claude](https://img.shields.io/badge/assisted%20by-Claude-D97757?logo=anthropic&logoColor=white)](https://claude.ai/code)
 
-Automation scripts for the ICEMAN and OXFORD homelabs in Amsterdam, Netherlands. Scripts post to Slack and run via cron.
+Automation scripts for the ICEMAN and OXFORD homelabs in Amsterdam, Netherlands, plus backup handoff to WOLFMAN. Scripts post to Slack and run via cron.
 
 ## Repository Structure
 
@@ -51,19 +51,29 @@ pi-scripts/
 | Model | Raspberry Pi 3 Model B Rev 1.2 |
 | OS | Raspbian GNU/Linux 13 (Trixie) — 32-bit armhf |
 | RAM | 922MB |
-| Storage | 32GB SanDisk High Endurance microSD (16% used) |
+| Storage | 32GB SanDisk High Endurance microSD (18% used) |
 | IP | 192.168.178.187 |
 | Role | Dev playground — Python, bots, experiments, cron jobs |
 
 ### OXFORD
 | Item | Detail |
 |------|--------|
-| Model | Raspberry Pi 4 Model B |
-| OS | Raspbian Bullseye — 64-bit |
+| Model | Raspberry Pi 4 Model B Rev 1.5 |
+| OS | Raspbian GNU/Linux 13 (Trixie) — 64-bit |
 | RAM | 2GB |
-| Storage | 1TB Western Digital SSD (55% used) |
+| Storage | 1TB Western Digital SSD (57% used) |
 | IP | 192.168.178.201 |
 | Role | Infrastructure — Nextcloud, Docker, Cloudflare Tunnel, backups |
+
+### WOLFMAN
+| Item | Detail |
+|------|--------|
+| Model | MacBook Air |
+| OS | macOS 12.7.6 (Monterey) — x86_64 |
+| RAM | 8GB |
+| Storage | 931GB "Nextcloud" volume, mounted for backups (39% used) |
+| IP | 192.168.178.141 |
+| Role | Off-Pi backup target — OXFORD's Nextcloud data lands here via `oxford_to_samsung.sh`; also runs this repo's Claude Code sessions |
 
 ## ICEMAN Scripts
 
