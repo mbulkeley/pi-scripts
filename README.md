@@ -23,6 +23,8 @@ pi-scripts/
 │   ├── logs/                       ← shared logs directory
 │   ├── rsync/
 │   │   └── rsync_backup.sh         ← weekly backup to OXFORD
+│   ├── security_monitor/
+│   │   └── security_monitor.sh     ← unexpected listening-port alerts
 │   ├── slackbot/
 │   │   └── slackbot.py             ← daily morning briefing
 │   ├── speedtest/
@@ -36,6 +38,8 @@ pi-scripts/
 │   │   └── disk_monitor.sh         ← disk usage alerts + weekly report
 │   ├── health_monitor/
 │   │   └── health_monitor.sh       ← load/memory/zombie/Docker/cloudflared checks
+│   ├── security_monitor/
+│   │   └── security_monitor.sh     ← unexpected listening-port alerts
 │   ├── speedtest/
 │   │   └── speedtest_logger.sh     ← network speedtest logger
 │   └── temp_monitor/
@@ -104,6 +108,9 @@ Runs daily at 5:30pm. Logs network speedtest results (ping, download, upload, IS
 ### rsync
 Runs weekly on Sundays at 2am. Backs up `~/projects/`, home directory, and crontab to OXFORD (`~/Backup/iceman/`). Posts a Slack summary including files and data transferred.
 
+### security_monitor
+Runs every 15 minutes. Compares TCP listeners bound to non-loopback addresses against an expected allowlist (SSH + Pi-hole's DNS/admin ports) and posts a Slack alert if anything unexpected shows up. UDP is intentionally excluded — mDNS/avahi and ephemeral client sockets make it too noisy to be a useful signal.
+
 ## OXFORD Scripts
 
 ### backup (oxford_to_samsung.sh)
@@ -118,6 +125,9 @@ Runs daily at 8am. Alerts to Slack if `/` usage is ≥80%, plus a weekly usage r
 ### health_monitor
 Runs every 15 minutes. Checks load average, memory usage, zombie processes, required Docker containers (Nextcloud app/db/redis), and the cloudflared tunnel — posts a combined Slack alert if anything's off.
 
+### security_monitor
+Runs every 15 minutes. Compares TCP listeners bound to non-loopback addresses against an expected allowlist (SSH, Nextcloud on 8080, a separate meal-planner app on 8000 — both LAN-only per ufw) and posts a Slack alert if anything unexpected shows up. VNC (5900) is deliberately *not* on the allowlist since it's meant to stay off except when in active use — see [Security](#security).
+
 ### speedtest
 Runs daily at 5:15pm. Logs network speedtest results to Slack using the Ookla speedtest CLI.
 
@@ -130,6 +140,7 @@ Runs daily at 5:15pm. Logs network speedtest results to Slack using the Ookla sp
 05 9 * * *   /home/pi/projects/venv/bin/python3 /home/pi/projects/iceman/slackbot/slackbot.py >/dev/null 2>&1
 # 30 9 * * *   /home/pi/projects/venv/bin/python3 /home/pi/projects/iceman/lacrosse/main.py >> /home/pi/projects/iceman/lacrosse/logs/lacrosse.log 2>&1  (disabled — out of season)
 30 17 * * *  /bin/bash /home/pi/projects/iceman/speedtest/speedtest_logger.sh >> /home/pi/projects/iceman/speedtest/logs/speedtest.log 2>&1
+*/15 * * * * /bin/bash /home/pi/projects/iceman/security_monitor/security_monitor.sh >> /home/pi/projects/iceman/security_monitor/logs/security_monitor.log 2>&1
 ```
 
 ## OXFORD Crontab
@@ -141,6 +152,7 @@ Runs daily at 5:15pm. Logs network speedtest results to Slack using the Ookla sp
 */15 * * * *  /bin/bash /home/pi/Projects/pi-scripts/oxford/health_monitor/health_monitor.sh >> /home/pi/Projects/pi-scripts/oxford/health_monitor/logs/health_monitor.log 2>&1
 0 8 * * *     /bin/bash /home/pi/Projects/pi-scripts/oxford/disk_monitor/disk_monitor.sh >> /home/pi/Projects/pi-scripts/oxford/disk_monitor/logs/disk_monitor.log 2>&1
 15 17 * * *   /bin/bash /home/pi/Projects/pi-scripts/oxford/speedtest/speedtest_logger.sh >> /home/pi/Projects/pi-scripts/oxford/speedtest/logs/speedtest.log 2>&1
+*/15 * * * *  /bin/bash /home/pi/Projects/pi-scripts/oxford/security_monitor/security_monitor.sh >> /home/pi/Projects/pi-scripts/oxford/security_monitor/logs/security_monitor.log 2>&1
 ```
 
 ## Setup
@@ -181,10 +193,14 @@ SLACK_WEBHOOK_WORK=https://hooks.slack.com/services/...
 `SLACK_WEBHOOK_WORK` is used by `slackbot.py` to mirror the daily briefing to a separate work Slack workspace.
 
 ## Security
-- SSH key auth only — no passwords
+- SSH key auth only — no passwords (ICEMAN enforces this; OXFORD's `sshd_config` needs `PasswordAuthentication no` set manually, see Notes)
 - Secrets in `/etc/environment`, never in scripts
 - Gitleaks pre-commit hook, plus a gitleaks GitHub Action on push/PR as a backstop for clones without the hook installed
 - Ruff for linting and formatting
+- ufw active on both hosts, default-deny incoming. OXFORD only opens 22 to the internet; 8000 (meal-planner) and 8080 (Nextcloud, bypassing the Cloudflare Tunnel) are LAN-only (`192.168.178.0/24`) — no router port-forwarding exists, so nothing here is reachable from the internet beyond the Cloudflare Tunnel's `nextcloud.mauriecloud.com` route
+- Cloudflare Tunnel (`cloudflared`) on OXFORD only routes `nextcloud.mauriecloud.com` → `localhost:8080`; everything else 404s
+- VNC on OXFORD (`vncserver-x11-serviced`, used periodically for Garmin watch fixes) is start-on-demand, not always-on: `sudo systemctl start vncserver-x11-serviced` before use, `stop` after. `security_monitor.sh` will alert if it's ever left running
+- `security_monitor.sh` on both hosts flags any TCP listener that isn't on the expected allowlist — see the ICEMAN/OXFORD Scripts sections above
 
 ## License
 Private repository, all rights reserved. Not currently licensed for reuse.
@@ -194,3 +210,4 @@ Private repository, all rights reserved. Not currently licensed for reuse.
 - `/etc/environment` values must have no quotes
 - Cron loads `/etc/environment` automatically; manual runs need `export VAR=$(grep VAR /etc/environment | cut -d= -f2)`
 - Trixie uses journald: `sudo journalctl` not `/var/log/syslog`
+- To lock down OXFORD's SSH to key-only (matching ICEMAN): `sudo sed -i 's/^#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config && sudo sshd -t && sudo systemctl restart sshd`. Verify a *new* SSH connection still works before closing your existing session.
