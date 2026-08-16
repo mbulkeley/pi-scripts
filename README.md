@@ -4,7 +4,7 @@
 ![Platform](https://img.shields.io/badge/platform-Raspberry%20Pi-C51A4A?logo=raspberry-pi&logoColor=white)
 ![Slack](https://img.shields.io/badge/posts%20to-Slack-4A154B?logo=slack&logoColor=white)
 ![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)
-![Last Commit](https://img.shields.io/github/last-commit/mbulkeley/pi-scripts)
+![Private](https://img.shields.io/badge/repo-private-lightgrey)
 [![Built with Claude](https://img.shields.io/badge/assisted%20by-Claude-D97757?logo=anthropic&logoColor=white)](https://claude.ai/code)
 
 Automation scripts for the ICEMAN and OXFORD homelabs in Amsterdam, Netherlands, plus backup handoff to WOLFMAN. Scripts post to Slack and run via cron.
