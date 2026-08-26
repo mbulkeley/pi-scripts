@@ -57,7 +57,7 @@ pi-scripts/
 | RAM | 922MB |
 | Storage | 32GB SanDisk High Endurance microSD (18% used) |
 | IP | 192.168.178.187 |
-| Role | Dev playground — Python, bots, experiments, cron jobs |
+| Role | Pi-Hole & Dev playground - Python, bots, experiments, cron jobs |
 
 ### OXFORD
 | Item | Detail |
