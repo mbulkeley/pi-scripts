@@ -56,7 +56,7 @@ pi-scripts/
 | OS | Raspbian GNU/Linux 13 (Trixie) — 32-bit armhf |
 | RAM | 922MB |
 | Storage | 32GB SanDisk High Endurance microSD (18% used) |
-| IP | 192.168.178.187 |
+| IP | 192.168.x.x |
 | Role | Pi-Hole & Dev playground - Python, bots, experiments, cron jobs |
 
 ### OXFORD
@@ -66,7 +66,7 @@ pi-scripts/
 | OS | Raspbian GNU/Linux 13 (Trixie) — 64-bit |
 | RAM | 2GB |
 | Storage | 1TB Western Digital SSD (57% used) |
-| IP | 192.168.178.201 |
+| IP | 192.168.x.x |
 | Role | Infrastructure — Nextcloud, Docker, Cloudflare Tunnel, backups |
 
 ### WOLFMAN
@@ -76,7 +76,7 @@ pi-scripts/
 | OS | macOS 12.7.6 (Monterey) — x86_64 |
 | RAM | 8GB |
 | Storage | 931GB "Nextcloud" volume, mounted for backups (39% used) |
-| IP | 192.168.178.141 |
+| IP | 192.168.x.x |
 | Role | Off-Pi backup target — OXFORD's Nextcloud data lands here via `oxford_to_samsung.sh`; also runs this repo's Claude Code sessions |
 
 ## ICEMAN Scripts
@@ -197,7 +197,7 @@ SLACK_WEBHOOK_WORK=https://hooks.slack.com/services/...
 - Secrets in `/etc/environment`, never in scripts
 - Gitleaks pre-commit hook, plus a gitleaks GitHub Action on push/PR as a backstop for clones without the hook installed
 - Ruff for linting and formatting
-- ufw active on both hosts, default-deny incoming. OXFORD only opens 22 to the internet; 8000 (meal-planner) and 8080 (Nextcloud, bypassing the Cloudflare Tunnel) are LAN-only (`192.168.178.0/24`) — no router port-forwarding exists, so nothing here is reachable from the internet beyond the Cloudflare Tunnel's `nextcloud.mauriecloud.com` route
+- ufw active on both hosts, default-deny incoming. OXFORD only opens 22 to the internet; 8000 (meal-planner) and 8080 (Nextcloud, bypassing the Cloudflare Tunnel) are LAN-only (`192.168.x.x/24`) — no router port-forwarding exists, so nothing here is reachable from the internet beyond the Cloudflare Tunnel's `nextcloud.mauriecloud.com` route
 - Cloudflare Tunnel (`cloudflared`) on OXFORD only routes `nextcloud.mauriecloud.com` → `localhost:8080`; everything else 404s
 - VNC on OXFORD (`vncserver-x11-serviced`, used periodically for Garmin watch fixes) is start-on-demand, not always-on: `sudo systemctl start vncserver-x11-serviced` before use, `stop` after. `security_monitor.sh` will alert if it's ever left running
 - `security_monitor.sh` on both hosts flags any TCP listener that isn't on the expected allowlist — see the ICEMAN/OXFORD Scripts sections above
@@ -207,11 +207,11 @@ Used periodically for Garmin watch fixes. Off by default — start it before use
 ```bash
 ssh oxford
 sudo systemctl start vncserver-x11-serviced
-sudo ufw allow from 192.168.178.0/24 to any port 5900 proto tcp comment 'VNC LAN access - Garmin fixes'  # first time only, rule persists after
+sudo ufw allow from 192.168.x.x/24 to any port 5900 proto tcp comment 'VNC LAN access - Garmin fixes'  # first time only, rule persists after
 # ... do the Garmin fix ...
 sudo systemctl stop vncserver-x11-serviced
 ```
-Connect to `192.168.178.201:5900` (LAN only — not exposed externally, ufw blocks it otherwise).
+Connect to `192.168.x.x:5900` (LAN only — not exposed externally, ufw blocks it otherwise).
 
 **Known issue:** last tested 2026-08-16, the client connected but couldn't display the desktop. OXFORD boots to `graphical.target` with an active (idle) session on `seat0`, so a desktop session does exist — likely cause is RealVNC's Service Mode struggling to capture Raspberry Pi OS Trixie's default Wayland compositor. Not yet resolved; worth trying Virtual Mode (`vncserver-virtuald`) or forcing an X11 session if it recurs.
 
