@@ -270,16 +270,21 @@ def get_weather(logger):
 def post_to_slack(message, about, logger):
     logger.info('Posting to personal Slack')
     webhook_url = os.environ.get('SLACK_WEBHOOK_ICEMAN')
+    if not webhook_url:
+        logger.error('SLACK_WEBHOOK_ICEMAN is not set; not posting to Slack')
+        return
 
+    # Never log the exception text: requests includes the webhook URL in it.
     session = requests.Session()
     try:
-        response = session.post(webhook_url, json={'text': message})
+        response = session.post(webhook_url, json={'text': message}, timeout=30)
         response.raise_for_status()
         logger.debug(f'Posted {about} to Slack: {response.status_code}')
     except requests.exceptions.HTTPError as e:
-        logger.error(f'An HTTPError occurred posting to Slack: {e}')
+        status = e.response.status_code if e.response is not None else 'unknown'
+        logger.error(f'HTTP error posting to Slack: status {status}')
     except requests.RequestException as e:
-        logger.error(f'A general error occurred posting to Slack: {e}')
+        logger.error(f'Error posting to Slack: {type(e).__name__}')
     finally:
         session.close()
 
@@ -287,16 +292,21 @@ def post_to_slack(message, about, logger):
 def post_to_slack_work(message, about, logger):
     logger.info('Posting to work Slack')
     webhook_url = os.environ.get('SLACK_WEBHOOK_WORK')
+    if not webhook_url:
+        logger.error('SLACK_WEBHOOK_WORK is not set; not posting to work Slack')
+        return
 
+    # Never log the exception text: requests includes the webhook URL in it.
     session = requests.Session()
     try:
-        response = session.post(webhook_url, json={'text': message})
+        response = session.post(webhook_url, json={'text': message}, timeout=30)
         response.raise_for_status()
         logger.debug(f'Posted {about} to work Slack: {response.status_code}')
     except requests.exceptions.HTTPError as e:
-        logger.error(f'An HTTPError occurred posting to work Slack: {e}')
+        status = e.response.status_code if e.response is not None else 'unknown'
+        logger.error(f'HTTP error posting to work Slack: status {status}')
     except requests.RequestException as e:
-        logger.error(f'A general error occurred posting to work Slack: {e}')
+        logger.error(f'Error posting to work Slack: {type(e).__name__}')
     finally:
         session.close()
 
