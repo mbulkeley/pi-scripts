@@ -210,3 +210,4 @@ __marimo__/
 logs/
 *.bk
 iceman/rsync/crontab.bak
+iceman/rsync/pihole-teleporter/
